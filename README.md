@@ -1,10 +1,5 @@
 # 🏥 Patient Management System
 
-\<p align="center">   A Patient Management REST API built using \*\*FastAPI\*\* and \*\*Streamlit\*\*. \</p>
-
-\<p align="center">   ![Python]\([https://img.shields.io/badge/Python-3.10%2B-blue](https://img.shields.io/badge/Python-3.10%2B-blue))   ![FastAPI]\([https://img.shields.io/badge/FastAPI-Backend-009688](https://img.shields.io/badge/FastAPI-Backend-009688))   ![Streamlit]\([https://img.shields.io/badge/Streamlit-Frontend-FF4B4B](https://img.shields.io/badge/Streamlit-Frontend-FF4B4B))   ![Status]\([https://img.shields.io/badge/Status-Active-success](https://img.shields.io/badge/Status-Active-success)) \</p>
-
----
 
 ## 📌 Project Overview
 
@@ -20,7 +15,7 @@ Users can add, view, search, update, delete, sort, and analyze patient informati
 | ----------------- | ------------------------------------------------------------------- |
 | Backend API       | [Render API](https://patient-management-api-6zki.onrender.com)      |
 | API Documentation | [Swagger UI](https://patient-management-api-6zki.onrender.com/docs) |
-| Frontend          | *Add your Streamlit Cloud URL here after deployment*                |
+| Frontend          | https://patient-management-api-6zki.streamlit.app/                  |
 
 ## ✨ Features
 
@@ -213,9 +208,5 @@ API_URL = "https://patient-management-api-6zki.onrender.com"
 
 - GitHub: [Krishna-aids](https://github.com/Krishna-aids)
 
----
-
-\<p align="center">   ⭐ If you find this project useful, consider giving it a star! \</p>
-
-\<p align="center">   Built with ❤️ using Python, FastAPI and Streamlit. \</p>
+ 
 
