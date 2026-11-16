@@ -101,7 +101,7 @@ def create_patient(patient:Patient):
 
 
 
-@app.put('/edit{patient_id}')
+@app.put('/edit/{patient_id}')
 def Update_patient(patient_id:str,patient_update:PatientUpdate):
     data=load_data()
     if patient_id not in data:

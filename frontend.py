@@ -1,415 +1,249 @@
+
 import streamlit as st
 import requests
 
-# -----------------------------
-# Configuration
-# -----------------------------
-API_URL = "http://127.0.0.1:8000/predict"
-
 st.set_page_config(
-    page_title="Insurance Predictor",
+    page_title="Patient Management System",
     page_icon="🏥",
-    layout="centered"
+    layout="wide"
 )
 
-# -----------------------------
-# Custom CSS
-# -----------------------------
-st.markdown("""
-<style>
-
-.main-title {
-    text-align: center;
-    font-size: 38px;
-    font-weight: 700;
-    margin-bottom: 5px;
-}
-
-.subtitle {
-    text-align: center;
-    color: #888;
-    margin-bottom: 30px;
-}
-
-.result-card {
-    padding: 25px;
-    border-radius: 15px;
-    text-align: center;
-    margin-top: 20px;
-    border: 1px solid rgba(128,128,128,0.3);
-}
-
-.result-title {
-    font-size: 20px;
-    font-weight: 600;
-}
-
-.result-value {
-    font-size: 42px;
-    font-weight: 800;
-    margin-top: 10px;
-}
-
-.info-card {
-    padding: 18px;
-    border-radius: 12px;
-    border: 1px solid rgba(128,128,128,0.25);
-    margin-top: 15px;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# -----------------------------
-# Header
-# -----------------------------
-st.markdown(
-    '<div class="main-title">🏥 Insurance Premium Predictor</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="subtitle">AI-powered prediction based on your personal and lifestyle information</div>',
-    unsafe_allow_html=True
-)
-
-
-# -----------------------------
-# Sidebar
-# -----------------------------
-with st.sidebar:
-
-    st.header("⚙️ About the Model")
-
-    st.write(
-        "This application uses a machine-learning model "
-        "to predict an insurance premium category."
+# API configuration
+try:
+    default_url = st.secrets.get(
+        "API_URL",
+        "http://127.0.0.1:8000"
     )
+except Exception:
+    default_url = "http://127.0.0.1:8000"
 
-    st.divider()
+st.title("🏥 Patient Management System")
+st.caption("Manage patient records using FastAPI and Streamlit")
 
-    st.subheader("📌 Features Used")
-
-    st.write("• Age")
-    st.write("• Weight")
-    st.write("• Height")
-    st.write("• Income")
-    st.write("• Smoking")
-    st.write("• City")
-    st.write("• Occupation")
-
-    st.divider()
-
-    st.caption("FastAPI Backend: Port 8000")
-    st.caption("Streamlit Frontend: Port 8501")
+API_URL = st.sidebar.text_input(
+    "FastAPI Backend URL",
+    value=default_url
+).strip().rstrip("/")
 
 
-# -----------------------------
-# Input Section
-# -----------------------------
-st.subheader("👤 Enter Your Details")
-
-col1, col2 = st.columns(2)
-
-with col1:
-
-    age = st.number_input(
-        "Age",
-        min_value=1,
-        max_value=119,
-        value=30,
-        step=1
-    )
-
-    weight = st.number_input(
-        "Weight (kg)",
-        min_value=1.0,
-        max_value=300.0,
-        value=65.0,
-        step=0.5
-    )
-
-    height = st.number_input(
-        "Height (m)",
-        min_value=0.5,
-        max_value=2.5,
-        value=1.70,
-        step=0.01
-    )
-
-with col2:
-
-    income_lpa = st.number_input(
-        "Annual Income (LPA)",
-        min_value=0.1,
-        max_value=1000.0,
-        value=10.0,
-        step=0.5
-    )
-
-    smoker = st.selectbox(
-        "🚬 Are you a smoker?",
-        ["No", "Yes"]
-    )
-
-    city = st.text_input(
-        "📍 City",
-        value="Mumbai"
-    )
-
-occupation = st.selectbox(
-    "💼 Occupation",
-    [
-        "private_job",
-        "government_job",
-        "business_owner",
-        "freelancer",
-        "student",
-        "retired",
-        "unemployed"
-    ]
-)
-
-
-# -----------------------------
-# Live BMI
-# -----------------------------
-if height > 0:
-
-    bmi = weight / (height ** 2)
-
-    st.subheader("📊 Your BMI")
-
-    bmi_col1, bmi_col2 = st.columns([1, 2])
-
-    with bmi_col1:
-        st.metric(
-            "BMI",
-            f"{bmi:.1f}"
+# Common API request function
+def call_api(method, endpoint, **kwargs):
+    try:
+        response = requests.request(
+            method,
+            f"{API_URL}{endpoint}",
+            timeout=20,
+            **kwargs
         )
 
-    with bmi_col2:
-
-        if bmi < 18.5:
-            bmi_status = "Underweight"
-        elif bmi < 25:
-            bmi_status = "Normal"
-        elif bmi < 30:
-            bmi_status = "Overweight"
+        if response.ok:
+            st.success(f"Success! Status: {response.status_code}")
+            try:
+                st.json(response.json())
+            except ValueError:
+                st.write(response.text)
         else:
-            bmi_status = "Obese"
-
-        st.info(f"Current status: **{bmi_status}**")
-
-
-# -----------------------------
-# Input Summary
-# -----------------------------
-with st.expander("🔎 Review Your Information"):
-
-    summary_col1, summary_col2 = st.columns(2)
-
-    with summary_col1:
-        st.write(f"**Age:** {age}")
-        st.write(f"**Weight:** {weight} kg")
-        st.write(f"**Height:** {height} m")
-        st.write(f"**BMI:** {bmi:.1f}")
-
-    with summary_col2:
-        st.write(f"**Income:** ₹{income_lpa} LPA")
-        st.write(f"**Smoker:** {smoker}")
-        st.write(f"**City:** {city}")
-        st.write(f"**Occupation:** {occupation}")
-
-
-# -----------------------------
-# Buttons
-# -----------------------------
-col_predict, col_reset = st.columns(2)
-
-with col_predict:
-
-    predict_button = st.button(
-        "🔮 Predict Premium Category",
-        use_container_width=True
-    )
-
-with col_reset:
-
-    reset_button = st.button(
-        "🔄 Reset",
-        use_container_width=True
-    )
-
-
-# -----------------------------
-# Reset
-# -----------------------------
-if reset_button:
-
-    st.rerun()
-
-
-# -----------------------------
-# Prediction
-# -----------------------------
-if predict_button:
-
-    # Validation
-    if not city.strip():
-
-        st.error("⚠️ Please enter your city.")
-
-    elif height <= 0:
-
-        st.error("⚠️ Height must be greater than zero.")
-
-    else:
-
-        input_data = {
-            "age": age,
-            "weight": weight,
-            "height": height,
-            "income_lpa": income_lpa,
-            "smoker": smoker == "Yes",
-            "city": city,
-            "occupation": occupation
-        }
-
-        try:
-
-            with st.spinner("🤖 AI model is analyzing your information..."):
-
-                response = requests.post(
-                    API_URL,
-                    json=input_data,
-                    timeout=10
-                )
-
-            if response.status_code == 200:
-
-                result = response.json()
-
-                prediction = result.get("predicted_category")
-
-                if prediction:
-
-                    # -------------------------
-                    # Prediction Result
-                    # -------------------------
-                    st.divider()
-
-                    st.subheader("🎯 Prediction Result")
-
-                    if prediction.lower() == "low":
-
-                        icon = "🟢"
-
-                    elif prediction.lower() == "medium":
-
-                        icon = "🟡"
-
-                    elif prediction.lower() == "high":
-
-                        icon = "🔴"
-
-                    else:
-
-                        icon = "🔵"
-
-                    st.markdown(
-                        f"""
-                        <div class="result-card">
-
-                        <div class="result-title">
-                        Predicted Insurance Premium Category
-                        </div>
-
-                        <div class="result-value">
-                        {icon} {prediction}
-                        </div>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                    # -------------------------
-                    # Explanation
-                    # -------------------------
-                    st.subheader("💡 What does this mean?")
-
-                    if prediction.lower() == "low":
-
-                        st.success(
-                            "The model predicts a **Low** premium category "
-                            "based on the information provided."
-                        )
-
-                    elif prediction.lower() == "medium":
-
-                        st.warning(
-                            "The model predicts a **Medium** premium category "
-                            "based on the information provided."
-                        )
-
-                    elif prediction.lower() == "high":
-
-                        st.error(
-                            "The model predicts a **High** premium category "
-                            "based on the information provided."
-                        )
-
-                    else:
-
-                        st.info(
-                            f"The model predicted the category **{prediction}**."
-                        )
-
-                    # -------------------------
-                    # User Profile
-                    # -------------------------
-                    st.subheader("📋 Prediction Summary")
-
-                    c1, c2, c3 = st.columns(3)
-
-                    with c1:
-                        st.metric("Age", age)
-
-                    with c2:
-                        st.metric("BMI", f"{bmi:.1f}")
-
-                    with c3:
-                        st.metric("Income", f"{income_lpa} LPA")
-
-                else:
-
-                    st.error("⚠️ API returned no prediction.")
-
-            else:
-
-                st.error(
-                    f"API Error: {response.status_code}"
-                )
-
+            st.error(f"API Error: {response.status_code}")
+            try:
+                st.json(response.json())
+            except ValueError:
                 st.write(response.text)
 
-        except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError:
+        st.error("Cannot connect to FastAPI. Check your backend URL and server.")
 
-            st.error(
-                "❌ Could not connect to FastAPI. "
-                "Make sure Uvicorn is running on port 8000."
+    except requests.exceptions.Timeout:
+        st.error("The API request timed out.")
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"Request failed: {e}")
+
+
+# Dashboard tabs
+view_tab, search_tab, add_tab, update_tab, delete_tab, sort_tab = st.tabs(
+    ["📋 View", "🔍 Search", "➕ Add", "✏️ Update", "🗑️ Delete", "↕️ Sort"]
+)
+
+
+# 1. VIEW ALL PATIENTS
+with view_tab:
+    st.subheader("All Patient Records")
+
+    if st.button("Load All Patients"):
+        call_api("GET", "/view")
+
+
+# 2. SEARCH PATIENT
+with search_tab:
+    st.subheader("Search Patient by ID")
+
+    with st.form("search_form"):
+        patient_id = st.text_input("Patient ID", placeholder="P001")
+        search_button = st.form_submit_button("Search")
+
+    if search_button:
+        if patient_id.strip():
+            call_api(
+                "GET",
+                f"/patient/{patient_id.strip()}"
+            )
+        else:
+            st.warning("Please enter a patient ID.")
+
+
+# 3. ADD PATIENT
+with add_tab:
+    st.subheader("Add New Patient")
+
+    with st.form("add_form"):
+        patient_id = st.text_input("Patient ID", placeholder="P008")
+        name = st.text_input("Patient Name")
+        city = st.text_input("City")
+
+        age = st.number_input(
+            "Age", min_value=1, max_value=119, value=21
+        )
+
+        gender = st.selectbox(
+            "Gender", ["Male", "Female", "other"]
+        )
+
+        height = st.number_input(
+            "Height (meters)", min_value=0.1,
+            max_value=2.5, value=1.70, step=0.01
+        )
+
+        weight = st.number_input(
+            "Weight (kg)", min_value=1.0,
+            max_value=300.0, value=60.0
+        )
+
+        add_button = st.form_submit_button("Add Patient")
+
+    if add_button:
+        if not patient_id.strip() or not name.strip() or not city.strip():
+            st.warning("Please fill in Patient ID, Name and City.")
+        else:
+            payload = {
+                "id": patient_id.strip().upper(),
+                "name": name.strip(),
+                "city": city.strip(),
+                "age": age,
+                "gender": gender,
+                "height": height,
+                "weight": weight
+            }
+
+            call_api("POST", "/create", json=payload)
+
+
+# 4. UPDATE PATIENT
+with update_tab:
+    st.subheader("Update Patient Details")
+
+    with st.form("update_form"):
+        update_id = st.text_input("Patient ID to update")
+
+        new_name = st.text_input("New Name (leave blank to skip)")
+        new_city = st.text_input("New City (leave blank to skip)")
+        new_age = st.text_input("New Age (leave blank to skip)")
+        new_height = st.text_input("New Height (leave blank to skip)")
+        new_weight = st.text_input("New Weight (leave blank to skip)")
+
+        new_gender = st.selectbox(
+            "New Gender",
+            ["No change", "Male", "Female"]
+        )
+
+        update_button = st.form_submit_button("Update Patient")
+
+    if update_button:
+        payload = {}
+
+        if new_name.strip():
+            payload["name"] = new_name.strip()
+
+        if new_city.strip():
+            payload["city"] = new_city.strip()
+
+        try:
+            if new_age.strip():
+                payload["age"] = int(new_age)
+
+            if new_height.strip():
+                payload["height"] = float(new_height)
+
+            if new_weight.strip():
+                payload["weight"] = float(new_weight)
+
+            if new_gender != "No change":
+                payload["gender"] = new_gender
+
+            if not update_id.strip():
+                st.warning("Enter a patient ID.")
+            elif not payload:
+                st.warning("Enter at least one field to update.")
+            else:
+                call_api(
+                    "PUT",
+                    f"/edit/{update_id.strip()}",
+                    json=payload
+                )
+
+        except ValueError:
+            st.error("Age, height and weight must contain valid numbers.")
+
+
+# 5. DELETE PATIENT
+with delete_tab:
+    st.subheader("Delete Patient")
+
+    with st.form("delete_form"):
+        delete_id = st.text_input("Patient ID to delete")
+        confirm = st.checkbox("I confirm that I want to delete this patient")
+        delete_button = st.form_submit_button("Delete Patient")
+
+    if delete_button:
+        if not delete_id.strip():
+            st.warning("Enter a patient ID.")
+        elif not confirm:
+            st.warning("Please confirm before deleting.")
+        else:
+            call_api(
+                "DELETE",
+                f"/delete/{delete_id.strip()}"
             )
 
-        except requests.exceptions.Timeout:
 
-            st.error(
-                "⏳ FastAPI took too long to respond."
-            )
+# 6. SORT PATIENTS
+with sort_tab:
+    st.subheader("Sort Patient Records")
 
-        except Exception as e:
+    with st.form("sort_form"):
+        sort_by = st.selectbox(
+            "Sort By", ["height", "weight", "bmi"]
+        )
 
-            st.error(
-                f"❌ Unexpected error: {e}"
-            )
+        order = st.selectbox(
+            "Order", ["asc", "desc"]
+        )
+
+        sort_button = st.form_submit_button("Sort Records")
+
+    if sort_button:
+        call_api(
+            "GET",
+            "/sort",
+            params={
+                "sort_by": sort_by,
+                "order": order
+            }
+        )
+
+
+st.sidebar.divider()
+st.sidebar.markdown("### Project Information")
+st.sidebar.write("Frontend: Streamlit")
+st.sidebar.write("Backend: FastAPI")
+st.sidebar.write("Data: JSON file")
+st.sidebar.caption("Built for FastAPI practice")
